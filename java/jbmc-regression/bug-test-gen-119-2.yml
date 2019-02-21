@@ -1,8 +1,0 @@
-format_version: "1.0"
-input_files:
-  - ../common/
-  - bug-test-gen-119-2/
-properties:
-  - property_file: ../properties/assert.prp
-    expected_verdict: true
-
