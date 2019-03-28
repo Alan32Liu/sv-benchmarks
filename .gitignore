@@ -2,3 +2,8 @@
 *.jar
 *.zip
 *~
+
+# local tests
+c/c_files_and_slocs.csv
+c/instr_0.07/
+
