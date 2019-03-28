@@ -3,7 +3,7 @@ extern void __VERIFIER_assume(int);
 void __VERIFIER_assert(int cond) { if(!(cond)) { ERROR: __VERIFIER_error(); } }
 extern short __VERIFIER_nondet_short(void);
 
-short SIZE;
+#define SIZE 100000
 
 int main()
 {
