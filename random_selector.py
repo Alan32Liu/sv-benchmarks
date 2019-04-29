@@ -180,7 +180,9 @@ lengths = [random.choice(group) for group in grouped_lengths]
 print(lengths)
 selected = [random.choice(list(length_dict[length])) for length in lengths]
 print(selected)
-selected = ['heap-manipulation/sll_to_dll_rev-11.i']
+
+# selected = ['heap-manipulation/sll_to_dll_rev-11.i']
+
 all_percentages = []
 for code in selected:
     src_dir, src_name = code.split("/")
