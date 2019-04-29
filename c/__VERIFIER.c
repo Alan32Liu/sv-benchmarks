@@ -4,32 +4,38 @@
 #include <assert.h>
 
 void __VERIFIER_error() {
-	exit(100);
-}
-
-int __my_read_int(int len) {
-	char str[len];
-	read(0, str, len);
-	// scanf("%s", str);
-	return atoi(str);
+	exit(101);
 }
 
 int __VERIFIER_nondet_int() {
-	int x = __my_read_int(4);
+        int x = 0;
+        read(0, (char *)&x, sizeof(x));
 	// printf("x = %d\n", x);
 	return x;
 }
 
-int __VERIFIER_nondet_short() {
-	return __my_read_int(2);
+short __VERIFIER_nondet_short() {
+	short x = 0;
+	read(0, (char *)&x, sizeof(x));
+	return x;
 }
 
-int __VERIFIER_nondet_ulong() {
-	return __my_read_int(4);
+unsigned long __VERIFIER_nondet_ulong() {
+	unsigned long x = 0;
+	read(0, (char *)&x, sizeof(x));
+	return x;
 }
 
-int __VERIFIER_nondet_char() {
-	return __my_read_int(4);
+float __VERIFIER_nondet_float() {
+	float x = 0.0;
+	read(0, (char *)&x, sizeof(x));
+	return x;
+}
+
+char __VERIFIER_nondet_char() {
+	char x = 0;
+	read(0, &x, sizeof(x));
+	return x;
 }
 
 int __VERIFIER_assume(int b) {
