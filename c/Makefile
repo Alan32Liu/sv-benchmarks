@@ -12,7 +12,7 @@ INSTRU_DIR := instr
 
 include $(LEVEL)/Makefile.config
 
-%.s: %.c
+%.s: %.i
 	$(CC) -S -g -o $@ $^
 
 %.instr.s: %.s
@@ -24,7 +24,7 @@ include $(LEVEL)/Makefile.config
 
 
 .PHONY: instr_all, instr_threshold, instr_clean
-SOURCE_FILES := $(shell find . -mindepth 2 -name '*.c')
+SOURCE_FILES := $(shell find . -mindepth 2 -name '*.i')
 instr_all:
 	@python3 -Bc "from makefile_assistant import instrument_all; \
 	instrument_all()"
