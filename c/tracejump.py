@@ -27,10 +27,15 @@ is64 = True
 # registers used by write
 # rcx, r11
 
+def trace_jump_set(output):
+    assert is64
+    output.write('\tpush %rax\n')
+    output.write('\tcall\t__trace_jump_set\n')
+    output.write('\tpop  %rax\n')    
 
 def trace_jump(output):
     assert is64
-
+    
     # output.write('.align 4\n')
     output.write('\tsub $128,%rsp\n')
     output.write('\tpush %rax\n')
@@ -67,6 +72,11 @@ def instrument():
             ins_lines += 1
             instrument_next = False
 
+        # do we want to instrument call instructions too?
+        if line[0] == '\t' and line[1] == 'j':
+            trace_jump_set(ins_file)
+            # ins_lines += 1
+            
         ins_file.write(line)
 
         if line[0] == '\t' and line[1] == '.':
