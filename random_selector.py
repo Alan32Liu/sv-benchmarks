@@ -7,10 +7,11 @@ import random
 import re
 import threading
 import subprocess
-
+import gc
 
 NUM_FILES = 0
-NUM_NEEDS = 1
+NUM_NEEDS = 5
+NUM_SAMPLE = 1
 BLACKLIST = 'BlacklistBenchmarks'
 LENGTH_DICT_FILE = 'length_dict_i'
 SLOC_MEASURE = "grep 'Total Physical Source Lines of Code (SLOC)' | grep -o '[0-9,]*'"
@@ -18,13 +19,13 @@ GCOV_CMD = "gcc -fprofile-arcs -ftest-coverage -o "
 LEGION_DIR = "../../Principes"
 INPUTS_DIR = "{}/inputs".format(LEGION_DIR)
 
-TIME_RESTRICTION = int(1/6 * 60 * 60)   # seconds
-MEMO_RESTRICTION = 64 * 1000 * 1000  # KB
+TIME_RESTRICTION = int(1 * 60 * 60)   # seconds
+MEMO_RESTRICTION = int(64 * 1000 * 1000)  # KB
 RESTRICTED_LEGION = 'restricted_legion.sh'
 RESTRICTION = "ulimit -t {} -m {} -v {}\n".format(
     TIME_RESTRICTION, MEMO_RESTRICTION, MEMO_RESTRICTION)
 print(RESTRICTION)
-LEGION_CMD_PREFIX = "python3 principes.py ../Benchmarks/sv-benchmarks/c/instr"
+# LEGION_CMD_PREFIX = f"python3 principes.py {NUM_SAMPLE} ../Benchmarks/sv-benchmarks/c/instr"
 # pdb.set_trace()
 
 
@@ -108,8 +109,11 @@ def record_file(target_i, num_line, length_dict):
     NUM_FILES += 1
 
 
-def execute_legion(instr):
-    legion_cmd = '(cd {}; {}/{} 0);\n'.format(LEGION_DIR, LEGION_CMD_PREFIX, instr)
+def execute_legion(instr, num_sample):
+    legion_cmd = '(cd {}; {}/{} 0);\n'.format(
+        LEGION_DIR,
+        "python3 principes.py {} ../Benchmarks/sv-benchmarks/c/instr".format(num_sample),
+        instr)
 
     with open(RESTRICTED_LEGION, 'w') as restrictor:
         restrictor.writelines([RESTRICTION, legion_cmd, 'echo $?'])
@@ -155,74 +159,84 @@ def cleanup():
     os.system("rm -rf ../../Principes/inputs/*")
 
 
-cleanup()
-TARGET_DIRS = parse_target_dirs()
-# {line of source code : file name}
-unfiltered_length_dict = get_length_dict()
-blacklist = parse_blacklist()
+# cleanup()
+# TARGET_DIRS = parse_target_dirs()
+# # {line of source code : file name}
+# unfiltered_length_dict = get_length_dict()
+# blacklist = parse_blacklist()
+#
+# length_dict = {k: [file for file in v if file not in blacklist]
+#                for k, v in unfiltered_length_dict.items()}
+#
+# sorted_lengths = list(sorted(length_dict.keys()))
+# group_size = int(len(sorted_lengths)/NUM_NEEDS)
+# grouped_lengths = \
+#     [sorted_lengths[group_size*i:group_size*(i+1)-1]
+#         for i in range(NUM_NEEDS)]
+#
+# # print(grouped_lengths)
+# print(NUM_FILES)
+#
+# # Assume we prefer diversity in length,
+# # it is better to first select randomly in length
+# # and then randomly pick files in each length selected
+# lengths = [random.choice(group) for group in grouped_lengths]
+# print(lengths)
+# selected = [random.choice(list(length_dict[length])) for length in lengths]
 
-length_dict = {k: [file for file in v if file not in blacklist]
-               for k, v in unfiltered_length_dict.items()}
-
-sorted_lengths = list(sorted(length_dict.keys()))
-group_size = int(len(sorted_lengths)/NUM_NEEDS)
-grouped_lengths = \
-    [sorted_lengths[group_size*i:group_size*(i+1)-1]
-        for i in range(NUM_NEEDS)]
-
-# print(grouped_lengths)
-print(NUM_FILES)
-
-# Assume we prefer diversity in length,
-# it is better to first select randomly in length
-# and then randomly pick files in each length selected
-lengths = [random.choice(group) for group in grouped_lengths]
-print(lengths)
-selected = [random.choice(list(length_dict[length])) for length in lengths]
-print(selected)
 
 # selected = ['heap-manipulation/sll_to_dll_rev-11.i']
+# selected = ['array-examples/sanfoundry_24-1.i', 'array-examples/sanfoundry_02_ground.i']
+# selected = ['array-examples/sanfoundry_24-1.i']
 
+selected = [
+    # "forester-heap/dll-simple-white-blue-1.i",
+    "list-ext-properties/test-0513_1.i",
+    # "heap-manipulation/tree-3.i",
+    "list-ext3-properties/sll_of_sll_nondet_append-2.i",
+    # "heap-manipulation/merge_sort-1.i",
+    "heap-manipulation/sll_to_dll_rev-1.i",
+    "loop-new/half.i",
+    "loop-lit/hhk2008.i",
+    "list-ext-properties/list-ext_1.i",
+    "forester-heap/dll-rb-cnstr_1-1.i"
+    ]
+
+print(selected)
 all_percentages = []
-for code in selected:
-    src_dir, src_name = code.split("/")
-    print("Instrumenting source code...")
-    os.system("(cd c; mkdir instr/{}; make {}instr)".format(
-        src_dir, code[:-1]))
-    if not os.listdir("c/instr/{}".format(src_dir)):
-        print("Instrumentation unsuccessful, cleanup...")
-        os.system("rm -rf c/instr/{}".format(src_dir))
-        continue
-    print("Copy preprocessed code to gcov")
-    os.system("cp c/{}i gcov/".format(code[:-1]))
-    # os.system("{} {} {}.c".format(GCOV_CMD, src_dir, code[:-1]))
+for i in [1, 2, 3, 4, 5]:
+    NUM_SAMPLE = i
+    for code in selected:
+        print("===== GARBAGE COLLECTED: {} =====".format(gc.collect()))
+        src_dir, src_name = code.split("/")
+        print("Instrumenting source code...")
+        os.system("(cd c; mkdir instr/{}; make {}instr)".format(
+            src_dir, code[:-1]))
+        if not os.listdir("c/instr/{}".format(src_dir)):
+            print("Instrumentation unsuccessful, cleanup...")
+            os.system("rm -rf c/instr/{}".format(src_dir))
+            continue
+        print("Copy preprocessed code to gcov")
+        os.system("cp c/{}i gcov/".format(code[:-1]))
 
+    # selected = ['array-examples/sanfoundry_24-1.instr']
+        percentages = []
+        try:
+            print("Run Legion...")
+            execute_legion(code[:-1] + 'instr', i)
+        except:
+            # pdb.set_trace()
+            pass
 
-# selected = ['array-examples/sanfoundry_24-1.instr']
-    percentages = []
-    try:
-        print("Run Legion...")
-        execute_legion(code[:-1] + 'instr')
-    except:
-        pdb.set_trace()
-        pass
+        # execute_legion(code[:-1] + 'instr')
 
-    # execute_legion(code[:-1] + 'instr')
+        # try:
+        #     execute_binary()
+        #     # os.system("(cd gcov; lcov -c  -d . -o {}.info )".format(src_name[:-2]))
+        #     # os.system("(cd gcov; genhtml {}.info -o . )".format(src_name[:-2]))
 
-    try:
-        execute_binary()
-        # print("Compile source code for gcov...")
-        # os.system("(cd gcov; {} {src} {src}.i ../c/__VERIFIER.c)".format(GCOV_CMD, src=src_name[:-2]))
-        # print("Compute coverage...")
-        # for input_str in os.listdir("{}/{}".format(INPUTS_DIR, src_name[:-2])):
-        #     print("    Execute binary with input...")
-        #     input_path = "{}/{}/{}".format(INPUTS_DIR, src_name[:-2], input_str)
-        #     os.system("(cd gcov; ./{} < ../{})".format(src_name[:-2], input_path))
-        #     print("    Computing the coverage...")
-        #     percentage = os.popen("(cd gcov; gcov -b -c -a -u {} | grep 'Taken at least once:' | grep -o [0-9.]*\%)".format(src_name[:-2])).read()
-        #     percentages.append(float(percentage[:-2]))
-    except:
-        pass    
-    all_percentages.append(percentages)
+        # except:
+        #     pass    
+        # all_percentages.append(percentages)
 
-print(all_percentages)
+# print(all_percentages)
